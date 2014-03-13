@@ -1,0 +1,26 @@
+%div.panel.panel-default
+  %div.panel-heading
+    %h4.panel-title#sprkl-property-builder-title= Rails.application.config.sparkle.fetch(:resource_customization_title, 'Resource Customization')
+  %div.panel-body#sprkl-property-builder
+    %form#sprkl-property-composer{:role => 'form'}
+      - existing_values = (defined?(existing_values) && existing_values ? existing_values : @existing_values) || {}
+      - if(resource_properties = defined?(properties) ? properties : @properties)
+        %div.form-group
+          %label{:for => 'resource_name'}
+            New Resource Name
+          %input.form-control#resource_name{:type => 'text', :placeholder => 'MyResource1', :name => 'resource_name', :value => existing_values['resource_name']}
+        - resource_properties.each do |property|
+          %div.form-group
+            %label{:for => property}= property.underscore.humanize
+            %input.form-control{:id => property, :type => 'text', :name => property, :value => existing_values[property]}
+        %input{:type => 'hidden', :name => 'resource_type', :value => defined?(resource) ? resource : @resource}
+        %button.btn.btn-success.sprkl{:type => 'button', :sprkl => 'add_resource'}
+          Save
+        %button.btn.btn-warning.sprkl{:type => 'button', :sprkl => 'cancel_resource'}
+          Cancel
+        %button.btn.btn-danger.sprkl{:type => 'button', :sprkl => 'delete_resource'}
+          Remove
+
+- if(resource_properties = defined?(properties) ? properties : @properties)
+  :javascript
+    insert_hooks();

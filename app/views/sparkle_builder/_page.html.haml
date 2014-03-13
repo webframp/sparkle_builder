@@ -1,0 +1,77 @@
+%h1= Rails.application.config.sparkle.fetch(:builder_title, 'Builder')
+- if true || Rails.application.config.sparkle[:allow_seeding]
+  %div.panel-group#seed-builder
+    %div.panel.panel-default
+      %div.panel-heading
+        %h4.panel-title= Rails.application.config.sparkle.fetch(:seed_title, 'Template Seeding')
+      %div.panel-body
+        %div.container
+          %div.col-md-4
+            %form.form-inline#sprkl-seed-form{:role => 'form'}
+              %div.form-group
+                %select.form-control#sprkl-seed{:name => 'sprkl_seed'}= grouped_options_for_select(defined?(template_seeds) ? template_seeds : @template_seeds)
+              %button.btn.btn-primary.sprkl{:type => 'button', :sprkl => 'seed_stack'}= Rails.application.config.sparkle.fetch(:seed_btn_text, 'Seed')
+  %br
+  %br
+%div.panel-group#parameter-builder
+  %div.panel.panel-default
+    %div.panel-heading
+      %h4.panel-title= Rails.application.config.sparkle.fetch(:parameters_title, 'Custom Parameters')
+    %div.panel-body
+      %div.container
+        %div.col-md-4
+          %form.form-inline#sprkl-parameter-form{:role => 'form'}
+            %div.form-group
+              %input.form-control#sprkl-parameter{:name => 'sprkl_parameter', :type => 'text'}
+            %button.btn.btn-primary.sprkl{:type => 'button', :sprkl => 'add_parameter'}
+              Add
+        %div.col-md-1
+        %div.col-md-6#sprkl-parameter-block
+          %div.panel.panel-default
+            %div.panel-heading
+              %h4.panel-title#sprkl-parameter-title= Rails.application.config.sparkle.fetch(:parameters_list_title, 'Parameters')
+            %div.panel-body#sprkl-parameter-display
+%br
+%br
+%div.panel-group#resource-builder
+  %div.panel.panel-default
+    %div.panel-heading
+      %h4.panel-title= Rails.application.config.sparkle.fetch(:resources_title, 'CloudFormation Resources')
+    %div.panel-body#resource-body
+      %div.container
+        %div.col-md-4
+          %select#sprkl-resources{:multiple => 'multiple', :name => 'sprkl_resources[]', :width => 300}= grouped_options_for_select(defined?(template_resources) ? template_resources : @template_resources)
+        %div.col-md-1
+        %div.col-md-6#sprkl-add-block
+          = render :partial => 'resource_property_form'
+%br
+%br
+%div.panel-group
+  %div.panel.panel-default
+    %div.panel-heading
+      %h4.panel-title
+        %a.accordion-toggle{'data-toggle' => 'collapse', :href => '#stackjson'}= Rails.application.config.sparkle.fetch(:template_json_title, 'Template JSON')
+    %div.panel-collapse.collapse#stackjson
+      %div.panel-body
+        %pre#sprkl-json
+%br
+%br
+%button.btn.btn-info.sprkl{:href => '#', :sprkl => 'validate_template', :type => 'button'}= Rails.application.config.sparkle.fetch(:validate_btn_text, 'Validate')
+%a.btn.btn-success{:href => '#'}= Rails.application.config.sparkle.fetch(:create_btn_text, 'Create')
+
+%div.modal.fade#validator-modal
+  %div.modal-dialog.modal-lg
+    %div.modal-content
+      %div.modal-header
+        %h4.modal-title= Rails.application.config.sparkle.fetch(:validate_in_progress_text, 'Validating template...')
+      %div.modal-body
+        %div.progress.progress-striped.active
+          %div.progress-bar.progress-bar-info{'aria-valuemax' => 100, 'aria-valuemin' => 0, 'aria-valuenow' => 5, :role => 'progressbar', :style => 'width: 5%'}
+      %div.modal-footer
+- (defined?(target_urls) ? target_urls : @target_urls).each do |key, value|
+  %hidden{:id => key, 'data-url' => value}
+
+= javascript_include_tag 'jquery.serialize-object.min.js'
+= javascript_include_tag 'jquery.multi-select.js'
+= javascript_include_tag 'sparkle_builder'
+= stylesheet_link_tag 'multi-select.css'

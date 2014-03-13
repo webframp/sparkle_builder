@@ -1,0 +1,14 @@
+$('#validator-modal .progress').removeClass('active');
+$('#validator-modal .progress').removeClass('progress-striped');
+$('#validator-modal .progress-bar').removeClass('progress-bar-info');
+$('#validator-modal .progress-bar').attr('aria-valuenow', 100);
+$('#validator-modal .progress-bar').css('width', '100%');
+<% if @error -%>
+$('#validator-modal h4').html('Validation Failed');
+$('#validator-modal .progress-bar').addClass('progress-bar-danger');
+$('#validator-modal .modal-body').append('<pre><%= escape_javascript(@error) %></pre>');
+<% else -%>
+$('#validator-modal h4').html('Validation Successful!');
+$('#validator-modal .progress-bar').addClass('progress-bar-success');
+<% end -%>
+$('#validator-modal .modal-footer').append('<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>');
