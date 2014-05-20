@@ -1,7 +1,36 @@
 class SparkleBuilderController < ApplicationController
 
+  helper :sparkle
+
   before_filter :load_target_urls
   before_filter :load_aws_resources
+
+  def initialize(*args, &block)
+    super
+    credentials = Rails.application.config.sparkle.
+      try(:[], :storage).
+      try(:[], :credentials)
+    bucket = Rails.application.config.sparkle.
+      try(:[], :storage).
+      try(:[], :bucket)
+    if(credentials && bucket)
+      require 'fog'
+      @fog = Fog::Storage.new(credentials)
+      @bucket = @fog.directories.get(bucket)
+      unless(@bucket)
+        @bucket = @fog.directories.create(:identity => bucket)
+      end
+    else
+      Rails.logger.warn 'Builder cannot persist data. The `:bucket` and `:credentials` must be configured!'
+    end
+    orchestration_credentials = Rails.application.config.sparkle.
+      try(:[], :orchestration).
+      try(:[], :credentials)
+    if(orchestration_credentials)
+      require 'fog'
+      @api = Fog::Orchestration.new(orchestration_credentials)
+    end
+  end
 
   def property_populator
     respond_to do |format|
@@ -22,9 +51,8 @@ class SparkleBuilderController < ApplicationController
     respond_to do |format|
       format.js do
         begin
-          cfn_connection.validate_template(
-            'TemplateBody' => compile_formation.to_json
-          )
+          stack = sparkle_api.stacks.new(:template => compile_formation.to_json)
+          stack.validate
         rescue => e
           @error = e.message
         end
@@ -41,6 +69,13 @@ class SparkleBuilderController < ApplicationController
   end
 
   def index
+    respond_to do |format|
+      format.html do
+        @items = list_templates.sort_by(&:last_modified).reverse.map do |item|
+          {:name => File.basename(item.identity).sub('.json', ''), :modified => item.last_modified}
+        end
+      end
+    end
   end
 
   def new
@@ -53,15 +88,54 @@ class SparkleBuilderController < ApplicationController
   end
 
   def create
-  end
-
-  def update
+    respond_to do |format|
+      format.js do
+        build_data = JSON.dump(:parameters => params[:parameters], :build => params[:build])
+        template = JSON.pretty_generate(JSON.load(compile_formation.to_json))
+        template_name = params[:template_name].gsub(/[^a-zA-Z0-9\.-_]/, '_').downcase.sub(/_+$/, '')
+        save_template(template_name, template)
+        save_build(template_name, build_data)
+        flash[:success] = "Created new template #{template_name}!"
+        @redirect_url = sparkle_builder_index_url
+      end
+    end
   end
 
   def edit
+    respond_to do |format|
+      format.html do
+        @build = fetch_build(params[:id])
+        @template_name = params[:id]
+        @template_seeds = fetch_seeds
+        @template_resources = fetch_resources
+      end
+    end
+  end
+
+  def update
+    respond_to do |format|
+      format.js do
+        build_data = JSON.dump(:parameters => params[:parameters], :build => params[:build])
+        template = JSON.pretty_generate(JSON.load(compile_formation.to_json))
+        template_name = params[:template_name].gsub(/[^a-zA-Z0-9\.-_]/, '_').downcase.sub(/_+$/, '')
+        save_template(template_name, template)
+        save_build(template_name, build_data)
+        flash[:success] = "Edited template #{template_name}!"
+        @redirect_url = sparkle_builder_index_url
+      end
+    end
   end
 
   def destroy
+    respond_to do |format|
+      format.html do
+        puts '*' * 200
+        p delete_template(params[:id])
+        p delete_build(params[:id])
+        flash[:warn] = "Template [#{params[:id]}] has been deleted!"
+        redirect_to sparkle_builder_index_url
+      end
+    end
   end
 
   def create_hook
@@ -78,6 +152,54 @@ class SparkleBuilderController < ApplicationController
 
   private
 
+  def save_build(name, build)
+    bucket.files.create(
+      :identity => generate_build_path(name),
+      :body => build
+    )
+  end
+
+  def save_template(name, template)
+    bucket.files.create(
+      :identity => generate_template_path(name),
+      :body => template
+    )
+  end
+
+  def fetch_template(name, return_container=false)
+    result = bucket.files.get(generate_template_path(name))
+    return_container ? result : result.body
+  end
+
+  def fetch_build(name, return_container=false)
+    build = bucket.files.get(generate_build_path(name))
+    return_container ? build : JSON.load(build.body)
+  end
+
+  def get_prefix
+    current_user.try(:username) || '_default'
+  end
+
+  def list_templates
+    bucket.files.all(:prefix => File.join('stacks', get_prefix))
+  end
+
+  def delete_template(name)
+    fetch_template(name, :container).destroy
+  end
+
+  def delete_build(name)
+    fetch_build(name, :container).destroy
+  end
+
+  def generate_template_path(name)
+    File.join('stacks', get_prefix, "#{name}.json")
+  end
+
+  def generate_build_path(name)
+    File.join('builds', get_prefix, "#{name}.json")
+  end
+
   def fetch_resources
     {}.tap do |hash|
       enabled = Rails.application.config.sparkle.fetch(:enabled_resources, %w(components dynamics aws)).map(&:to_sym)
@@ -86,12 +208,14 @@ class SparkleBuilderController < ApplicationController
           [key.sub('AWS::', ''), key]
         end
       end
-      [:components, :dynamics].each do |key|
-        if(enabled.include?(key))
-          hash[key.to_s.capitalize] = Dir.glob(
-            File.join(SparkleFormation.custom_paths["#{key}_directory".to_sym], '*.rb')
-          ).map do |file|
-            [File.basename(file).sub('.rb', '').humanize, File.join(key.to_s, File.basename(file))]
+      if(SparkleFormation.sparkle_path)
+        [:components, :dynamics].each do |key|
+          if(enabled.include?(key))
+            hash[key.to_s.capitalize] = Dir.glob(
+              File.join(SparkleFormation.custom_paths["#{key}_directory".to_sym], '*.rb')
+            ).map do |file|
+              [File.basename(file).sub('.rb', '').humanize, File.join(key.to_s, File.basename(file))]
+            end
           end
         end
       end
@@ -101,27 +225,31 @@ class SparkleBuilderController < ApplicationController
   SEED_IGNORE_DIRECTORIES = ['dynamics', 'components']
 
   def fetch_seeds
-    {}.tap do |hash|
-      Dir.glob(File.join(SparkleFormation.sparkle_path, '*')).sort.each do |entry|
-        next if SEED_IGNORE_DIRECTORIES.include?(File.basename(entry))
-        path = entry.sub(SparkleFormation.sparkle_path, '').sub(/^\//, '')
-        if(File.file?(entry) && entry.end_with?('.rb'))
-          hash['Base'] ||= []
-          hash['Base'] << [path.sub('.rb', '').humanize, path]
-        elsif(File.directory?(entry))
-          key = File.basename(path).tr('-_', ' ').humanize
-          hash[key] ||= []
-          Dir.glob(File.join(entry, '**', '*.rb')).sort.each do |entry|
-            path = entry.sub(SparkleFormation.sparkle_path, '').sub(/^\//, '')
-            readable_entry = path.sub('.rb', '').split('/')
-            readable_entry.shift
-            readable_entry = readable_entry.map{|i|i.tr('-_', ' ').humanize}.join(' / ')
-            hash[key] << [readable_entry, path]
+    if(SparkleFormation.sparkle_path)
+      {}.tap do |hash|
+        Dir.glob(File.join(SparkleFormation.sparkle_path, '*')).sort.each do |entry|
+          next if SEED_IGNORE_DIRECTORIES.include?(File.basename(entry))
+          path = entry.sub(SparkleFormation.sparkle_path, '').sub(/^\//, '')
+          if(File.file?(entry) && entry.end_with?('.rb'))
+            hash['Base'] ||= []
+            hash['Base'] << [path.sub('.rb', '').humanize, path]
+          elsif(File.directory?(entry))
+            key = File.basename(path).tr('-_', ' ').humanize
+            hash[key] ||= []
+            Dir.glob(File.join(entry, '**', '*.rb')).sort.each do |entry|
+              path = entry.sub(SparkleFormation.sparkle_path, '').sub(/^\//, '')
+              readable_entry = path.sub('.rb', '').split('/')
+              readable_entry.shift
+              readable_entry = readable_entry.map{|i|i.tr('-_', ' ').humanize}.join(' / ')
+              hash[key] << [readable_entry, path]
+            end
+          else
+            Rails.logger.error "Unknown type discovered. Unable to process. Path: #{entry}"
           end
-        else
-          Rails.logger.error "Unknown type discovered. Unable to process. Path: #{entry}"
         end
       end
+    else
+      {}
     end
   end
 
@@ -129,8 +257,12 @@ class SparkleBuilderController < ApplicationController
     @target_urls = {
       'sprkl-property-populator' => property_populator_sparkle_builder_index_url,
       'sprkl-do-validate' => validator_sparkle_builder_index_url,
+      'sprkl-do-create' => sparkle_builder_index_url,
       'sprkl-build-json' => build_json_sparkle_builder_index_url
     }
+    if(params[:id])
+      @target_urls['sprkl-do-update'] = sparkle_builder_url(params[:id])
+    end
   end
 
   def construct_properties(resource)
@@ -195,8 +327,18 @@ class SparkleBuilderController < ApplicationController
     end
   end
 
-  def cfn_connection
-    api.aws(:cloud_formation)
+  def sparkle_api
+    unless(@api)
+      raise 'No credentials provided for orchestration API connection!'
+    end
+    @api
+  end
+
+  def bucket
+    unless(@bucket)
+      raise 'No storage bucket available'
+    end
+    @bucket
   end
 
 end

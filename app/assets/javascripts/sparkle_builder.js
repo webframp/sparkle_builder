@@ -185,6 +185,23 @@ function validate_template(){
   $.post(url_for('sprkl-do-validate'), build_params());
 }
 
+// creator
+function save_template_prompt(){
+  disable_resources();
+  $('#save-modal').modal('show');
+}
+
+function save_template(){
+  params = build_params();
+  params['template_name'] = $('#template-name').val();
+  $.post(url_for('sprkl-do-create'), params);
+}
+
+function update_template(){
+  params = build_params();
+  params['template_name'];
+}
+
 // helpers
 function url_for(dom_id){
   return $('#' + dom_id).attr('data-url');

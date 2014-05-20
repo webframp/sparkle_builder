@@ -1,0 +1,15 @@
+= render :partial => 'page', :locals => {:template_resources => @template_resources}
+
+:javascript
+  $(document).ready(function(){
+    $('body').data('sparkles', #{format_type_to_js(@build)});
+    display_parameters();
+    $.each(resource_get(), function(key, elm){
+      update_resource_display(
+        elm['resource_type'],
+        elm['resource_name'],
+        elm['resource_name'] + ' [' + elm['resource_type'].replace('AWS::', '') + ']'
+      )
+    });
+    build_template_json();
+  });

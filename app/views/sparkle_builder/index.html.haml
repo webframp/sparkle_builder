@@ -1,0 +1,26 @@
+%div.container.sparkle-builder#template-listing
+  %div.title
+    %h1= Rails.application.config.sparkle.fetch(:builder_title, 'Builder')
+  %div.panel-group#template-list
+    %div.panel.panel-default
+      %div.panel-heading
+        %h2.panel-title.pull-left= Rails.application.config.sparkle.fetch(:template_list_title, 'Custom Templates')
+        %a.btn.btn-success.pull-right{:href => new_sparkle_builder_url}
+          Create!
+        %div.clearfix
+      %div.panel-body
+        %table.table.table-bordered.table-hover
+          %thead
+            %tr
+              %th.col-md-8
+                Template Name
+              %th.col-md-3
+                Last Modified
+              %th.col-md-1
+          %tbody
+            - @items.each do |item|
+              %tr
+                %td= link_to(item[:name], edit_sparkle_builder_url(item[:name]))
+                %td= item[:modified]
+                %td.alert-danger
+                  %center= link_to '<span class="glyphicon glyphicon-remove-circle alert-danger"></span>'.html_safe, sparkle_builder_url(item[:name]), :confirm => 'Delete this template?', :method => :delete
