@@ -110,7 +110,7 @@ class SparkleBuilderController < ApplicationController
     respond_to do |format|
       format.html do
         @build = fetch_build(params[:id])
-        @template_name = params[:id]
+        @template_name = @build['template_name'] = params[:id]
         @template_seeds = fetch_seeds
         @template_resources = fetch_resources
       end
@@ -125,7 +125,7 @@ class SparkleBuilderController < ApplicationController
         template_name = params[:template_name].gsub(/[^a-zA-Z0-9\.-_]/, '_').downcase.sub(/_+$/, '')
         save_template(template_name, template)
         save_build(template_name, build_data)
-        flash[:success] = "Edited template #{template_name}!"
+        flash[:success] = "Edited template [#{template_name}]!"
         @redirect_url = sparkle_builder_index_url
       end
     end

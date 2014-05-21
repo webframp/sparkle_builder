@@ -199,7 +199,12 @@ function save_template(){
 
 function update_template(){
   params = build_params();
-  params['template_name'];
+  $.ajax({
+    url: url_for('sprkl-do-update'),
+    type: 'PUT',
+    contentType: 'application/json',
+    data: JSON.stringify(params)
+  });
 }
 
 // helpers
