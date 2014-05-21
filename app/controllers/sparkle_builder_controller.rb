@@ -71,8 +71,13 @@ class SparkleBuilderController < ApplicationController
   def index
     respond_to do |format|
       format.html do
-        @items = list_templates.sort_by(&:last_modified).reverse.map do |item|
-          {:name => File.basename(item.identity).sub('.json', ''), :modified => item.last_modified}
+        begin
+          @items = list_templates.sort_by(&:last_modified).reverse.map do |item|
+            {:name => File.basename(item.identity).sub('.json', ''), :modified => item.last_modified}
+          end
+        rescue => e
+          @items = []
+          flash[:warn] = e.to_s
         end
       end
     end
