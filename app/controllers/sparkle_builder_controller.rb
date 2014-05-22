@@ -113,9 +113,6 @@ class SparkleBuilderController < ApplicationController
   def destroy
     respond_to do |format|
       format.html do
-        puts '*' * 200
-        p delete_template(params[:id])
-        p delete_build(params[:id])
         flash[:warn] = "Template [#{params[:id]}] has been deleted!"
         redirect_to sparkle_builder_index_url
       end
@@ -147,11 +144,12 @@ class SparkleBuilderController < ApplicationController
       if(SparkleFormation.sparkle_path)
         [:components, :dynamics].each do |key|
           if(enabled.include?(key))
-            hash[key.to_s.capitalize] = Dir.glob(
+            items = Dir.glob(
               File.join(SparkleFormation.custom_paths["#{key}_directory".to_sym], '*.rb')
             ).map do |file|
               [File.basename(file).sub('.rb', '').humanize, File.join(key.to_s, File.basename(file))]
             end
+            hash[key.to_s.capitalize] = items unless items.empty?
           end
         end
       end
@@ -202,7 +200,12 @@ class SparkleBuilderController < ApplicationController
   end
 
   def construct_properties(resource)
-    SfnAws.registry.fetch(resource, {}).fetch(:properties, [])
+    dyn_name = resource.split('/').last.sub('.rb', '')
+    begin
+      SparkleFormation.dynamic_info(dyn_name)[:parameters].keys
+    rescue KeyError
+      SfnAws.registry.fetch(resource, {}).fetch(:properties, [])
+    end
   end
 
   def load_aws_resources
