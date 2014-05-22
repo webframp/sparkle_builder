@@ -202,7 +202,7 @@ class SparkleBuilderController < ApplicationController
   def construct_properties(resource)
     dyn_name = resource.split('/').last.sub('.rb', '')
     begin
-      SparkleFormation.dynamic_info(dyn_name)[:parameters].keys
+      SparkleFormation.dynamic_info(dyn_name).fetch(:parameters, {}).keys
     rescue KeyError
       SfnAws.registry.fetch(resource, {}).fetch(:properties, [])
     end
