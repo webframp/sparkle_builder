@@ -1,14 +1,21 @@
+require 'knife-cloudformation/aws_commons/stack'
+
 class SparkleBuilderController < ApplicationController
 
   include SparkleBuilder::Persistence
 
   helper :sparkle
 
+  before_filter :sparkle_instance
   before_filter :load_target_urls
   before_filter :load_aws_resources
 
   def initialize(*args, &block)
     super
+  end
+
+  def sparkle_instance
+    SparkleFormation.new('dummy')
   end
 
   def property_populator
@@ -89,6 +96,8 @@ class SparkleBuilderController < ApplicationController
     respond_to do |format|
       format.html do
         @build = fetch_build(params[:id])
+        @build['parameters'] = {} unless @build['parameters'].is_a?(Hash)
+        @build['build'] = {} unless @build['build'].is_a?(Hash)
         @template_name = @build['template_name'] = params[:id]
         @template_seeds = fetch_seeds
         @template_resources = fetch_resources
@@ -113,6 +122,8 @@ class SparkleBuilderController < ApplicationController
   def destroy
     respond_to do |format|
       format.html do
+        delete_template(params[:id])
+        delete_build(params[:id])
         flash[:warn] = "Template [#{params[:id]}] has been deleted!"
         redirect_to sparkle_builder_index_url
       end
@@ -137,7 +148,7 @@ class SparkleBuilderController < ApplicationController
     {}.tap do |hash|
       enabled = Rails.application.config.sparkle.fetch(:enabled_resources, %w(components dynamics aws)).map(&:to_sym)
       if(enabled.include?(:aws))
-        hash['AWS'] = SfnAws.registry.keys.sort.map do |key|
+        hash['AWS'] = SfnAws.registry.keys.sort.reverse.map do |key|
           [key.sub('AWS::', ''), key]
         end
       end
@@ -146,7 +157,7 @@ class SparkleBuilderController < ApplicationController
           if(enabled.include?(key))
             items = Dir.glob(
               File.join(SparkleFormation.custom_paths["#{key}_directory".to_sym], '*.rb')
-            ).map do |file|
+            ).sort.reverse.map do |file|
               [File.basename(file).sub('.rb', '').humanize, File.join(key.to_s, File.basename(file))]
             end
             hash[key.to_s.capitalize] = items unless items.empty?
@@ -202,7 +213,8 @@ class SparkleBuilderController < ApplicationController
   def construct_properties(resource)
     dyn_name = resource.split('/').last.sub('.rb', '')
     begin
-      SparkleFormation.dynamic_info(dyn_name).fetch(:parameters, {}).keys
+      res = SparkleFormation.dynamic_info(dyn_name)
+      (res[:parameters].try(:keys) || []).map(&:to_s)
     rescue KeyError
       SfnAws.registry.fetch(resource, {}).fetch(:properties, [])
     end
@@ -220,7 +232,21 @@ class SparkleBuilderController < ApplicationController
 
   def compile_formation
     all_resources = params[:build]
-    parameters = params[:parameters]
+    all_resources = {}.tap do |a_r|
+      (all_resources || {}).each do |r_name, resource|
+        updated_resource = {}.tap do |r|
+          resource.each do |k,v|
+            if(v.to_s.start_with?('{') || v.to_s.start_with?('{'))
+              r[k] = JSON.load(v)
+            else
+              r[k] = v
+            end
+          end
+        end
+        a_r[r_name] = updated_resource
+      end
+    end
+    parameters = params[:parameters].is_a?(Hash) ? params[:parameters] : {}
     if(all_resources || parameters)
       all_resources ||= {}
       parameters ||= {}
@@ -233,7 +259,7 @@ class SparkleBuilderController < ApplicationController
         end.map do |k,v|
           v['resource_type'] = File.basename(v['resource_type']).sub('.rb', '')
           if(v['resource_type'].include?('::'))
-            v['resource_type'] = v['resource_type'].downcase.gsub('::', '_')
+            v['resource_type'] = v['resource_type'].gsub('::', '_').underscore
           end
           v['resource_type'] = v['resource_type'].to_sym
           [k, v]
@@ -260,7 +286,9 @@ class SparkleBuilderController < ApplicationController
           )
         end
       end
-      sfn.compile._dump
+      sfn_hash = sfn.compile._dump
+      KnifeCloudformation::AwsCommons::Stack.clean_parameters!(sfn_hash)
+      sfn_hash
     else
       {}
     end
