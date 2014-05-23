@@ -19,19 +19,21 @@ function delete_parameter(name){
 }
 
 function display_parameters(){
-  params = Object.keys(parameter_get()).sort();
-  $('#sprkl-parameter-display').html('');
-  content = '<table class="table table-bordered table-striped">';
-  $.each(params, function(idx, value){
-    content += '<tr><td>';
-    content += value;
-    content += '<a href="#" onclick="delete_parameter(';
-    content += "'" + value + "'";
-    content += '); return false;" style="color: black;" class="pull-right glyphicon glyphicon-remove-circle">';
-    content += '</a></td></tr>';
-  });
-  content += '</table>';
-  $('#sprkl-parameter-display').html(content);
+  if(parameter_get()){
+    params = Object.keys(parameter_get()).sort();
+    $('#sprkl-parameter-display').html('');
+    content = '<table class="table table-bordered table-striped">';
+    $.each(params, function(idx, value){
+      content += '<tr><td>';
+      content += value;
+      content += '<a href="#" onclick="delete_parameter(';
+      content += "'" + value + "'";
+      content += '); return false;" style="color: black;" class="pull-right glyphicon glyphicon-remove-circle">';
+      content += '</a></td></tr>';
+    });
+    content += '</table>';
+    $('#sprkl-parameter-display').html(content);
+  }
 }
 
 // resource ui helpers
@@ -82,6 +84,9 @@ function add_resource(resource){
   else {
     key = resource + '_' + (idx + 1);
     key = key.replace(/::/g, '');
+  }
+  if(data['resource_type'].substr(0, 8) == 'dynamics'){
+    key = key + data['resource_type'].split('/')[1].replace('.rb', '');
   }
   enable_resources(true);
   update_resource_display(resource, key, key + " [" + resource.replace('AWS::', '') + "]");
