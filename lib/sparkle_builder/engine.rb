@@ -17,10 +17,10 @@ module SparkleBuilder
         try(:[], :bucket)
       if(credentials && bucket)
         require 'fog'
-        fog = Rails.application.config.sparkle[:storage_connection] = Fog::Storage.new(credentials)
-        bucket = Rails.application.config.sparkle[:storage_bucket] = fog.directories.get(bucket)
-        unless(bucket)
-          Rails.application.config.sparkle[:storage_bucket] = bucket = @fog.directories.create(:identity => bucket)
+        fog = Rails.application.config.sparkle[:storage_connection] = fog = Fog::Storage.new(credentials)
+        Rails.application.config.sparkle[:storage_bucket] = fog.directories.get(bucket)
+        unless(Rails.application.config.sparkle[:storage_bucket])
+          Rails.application.config.sparkle[:storage_bucket] = fog.directories.create(:identity => bucket)
         end
       else
         Rails.logger.warn 'Builder cannot persist data. The `:bucket` and `:credentials` must be configured!'
