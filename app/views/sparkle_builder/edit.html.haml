@@ -2,14 +2,23 @@
 
 :javascript
   $(document).ready(function(){
+    $.each(#{format_type_to_js(@build.fetch('build', {}))}, function(key, elm){
+      if(elm['resource_name']){
+        resource_name = elm['resource_name']
+        update_resource_display(
+          elm['resource_type'],
+          resource_name,
+          resource_name + ' [' + elm['resource_type'].replace('AWS::', '') + ']'
+        );
+      } else {
+        console.log(key);
+        $('#sprkl-resources').multiSelect({afterSelect: function(){}});
+        $('#sprkl-resources').multiSelect('select', key);
+        $('#sprkl-resources').multiSelect({afterSelect: configure_resource});
+      }
+    });
     $('body').data('sparkles', #{format_type_to_js(@build)});
     display_parameters();
-    $.each(resource_get(), function(key, elm){
-      update_resource_display(
-        elm['resource_type'],
-        elm['resource_name'],
-        elm['resource_name'] + ' [' + elm['resource_type'].replace('AWS::', '') + ']'
-      )
-    });
+
     build_template_json();
   });
