@@ -1,5 +1,3 @@
-require 'knife-cloudformation/aws_commons/stack'
-
 class SparkleBuilderController < ApplicationController
 
   include SparkleBuilder::Persistence
