@@ -1,14 +1,13 @@
 module SparkleBuilder
   class Engine < ::Rails::Engine
 
-    config.to_prepare do
-      if(Rails.application.config.respond_to?(:sparkle) && Rails.application.config.sparkle)
-        sparkle_conf = Rails.application.config.sparkle.with_indifferent_access
-      else
-        sparkle_conf = {}.with_indifferent_access
-      end
-      Rails.application.config.sparkle = sparkle_conf
+    JAVASCRIPTS = %w(jquery.multi-select.js jquery.serialize-object.min.js typeahead.bundle.min.js sparkle_builder.js)
+    STYLESHEETS = %w(multi-select.css)
 
+    config.to_prepare do
+      require 'sparkle_formation'
+      Rails.application.config.sparkle = {}
+      SparkleUi::Setup.init!
       credentials = Rails.application.config.sparkle.
         try(:[], :storage).
         try(:[], :credentials)
@@ -25,14 +24,16 @@ module SparkleBuilder
       else
         Rails.logger.warn 'Builder cannot persist data. The `:bucket` and `:credentials` must be configured!'
       end
-      orchestration_credentials = Rails.application.config.sparkle.
-        try(:[], :orchestration).
-        try(:[], :credentials)
-      if(orchestration_credentials)
-        require 'fog'
-        Rails.application.config.sparkle[:orchestration_connection] = Fog::Orchestration.new(orchestration_credentials)
+      # Register javascripts
+      JAVASCRIPTS.each do |file|
+        ActionView::Helpers::AssetTagHelper.register_javascript_expansion :plugins, file
+        ActionView::Helpers::AssetTagHelper.register_javascript_expansion :sparkle_ui, file
       end
-
+      # Register stylesheets
+      STYLESHEETS.each do |file|
+        ActionView::Helpers::AssetTagHelper.register_stylesheet_expansion :plugins, file
+        ActionView::Helpers::AssetTagHelper.register_stylesheet_expansion :sparkle_ui, file
+      end
     end
 
   end
