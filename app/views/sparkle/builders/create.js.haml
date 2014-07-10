@@ -1,0 +1,5 @@
+:erb
+  $('#save-modal .modal-body').html('<div class="alert alert-success">Template successfully created!</div>');
+  $('#save-modal .modal-content').append('<div class="modal-footer"></div>');
+  $('#save-modal .modal-footer').append('<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>');
+  window.document.location = '<%= @redirect_url %>';
