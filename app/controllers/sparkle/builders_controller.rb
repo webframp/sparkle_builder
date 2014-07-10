@@ -280,9 +280,7 @@ class Sparkle::BuildersController < ApplicationController
           )
         end
       end
-      sfn_hash = sfn.dump
-      KnifeCloudformation::AwsCommons::Stack.clean_parameters!(sfn_hash)
-      sfn_hash
+      sfn.compile._dump
     else
       {}
     end
