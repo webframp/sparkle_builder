@@ -1,12 +1,8 @@
 module SparkleBuilder
   class Engine < ::Rails::Engine
 
-    JAVASCRIPTS = %w(jquery.multi-select.js jquery.serialize-object.min.js typeahead.bundle.min.js sparkle_builder.js)
-    STYLESHEETS = %w(multi-select.css)
-
     config.to_prepare do
       require 'sparkle_formation'
-      Rails.application.config.sparkle = {}
       SparkleUi::Setup.init!
       credentials = Rails.application.config.sparkle.
         try(:[], :storage).
@@ -23,16 +19,6 @@ module SparkleBuilder
         end
       else
         Rails.logger.warn 'Builder cannot persist data. The `:bucket` and `:credentials` must be configured!'
-      end
-      # Register javascripts
-      JAVASCRIPTS.each do |file|
-        ActionView::Helpers::AssetTagHelper.register_javascript_expansion :plugins, file
-        ActionView::Helpers::AssetTagHelper.register_javascript_expansion :sparkle_ui, file
-      end
-      # Register stylesheets
-      STYLESHEETS.each do |file|
-        ActionView::Helpers::AssetTagHelper.register_stylesheet_expansion :plugins, file
-        ActionView::Helpers::AssetTagHelper.register_stylesheet_expansion :sparkle_ui, file
       end
     end
 
