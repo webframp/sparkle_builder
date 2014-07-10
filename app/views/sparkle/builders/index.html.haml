@@ -5,7 +5,7 @@
     %div.panel.panel-default
       %div.panel-heading
         %h2.panel-title.pull-left= Rails.application.config.sparkle.fetch(:template_list_title, 'Custom Templates')
-        %a.btn.btn-success.pull-right{:href => new_sparkle_builder_url}
+        %a.btn.btn-success.pull-right{:href => new_sparkle_builder_path}
           Create!
         %div.clearfix
       %div.panel-body
@@ -20,7 +20,7 @@
           %tbody
             - @items.each do |item|
               %tr
-                %td= link_to(item[:name], edit_sparkle_builder_url(item[:name]))
+                %td= link_to(item[:name], edit_sparkle_builder_path(item[:name]))
                 %td= item[:modified]
                 %td.alert-danger
-                  %center= link_to '<span class="glyphicon glyphicon-remove-circle alert-danger"></span>'.html_safe, sparkle_builder_url(item[:name]), :confirm => 'Delete this template?', :method => :delete
+                  %center= link_to '<span class="glyphicon glyphicon-remove-circle alert-danger"></span>'.html_safe, sparkle_builder_path(item[:name]), :confirm => 'Delete this template?', :method => :delete

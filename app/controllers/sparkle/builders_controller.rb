@@ -1,4 +1,4 @@
-class SparkleBuilderController < ApplicationController
+class Sparkle::BuildersController < ApplicationController
 
   include SparkleBuilder::Persistence
 
@@ -7,10 +7,6 @@ class SparkleBuilderController < ApplicationController
   before_filter :sparkle_instance
   before_filter :load_target_urls
   before_filter :load_aws_resources
-
-  def initialize(*args, &block)
-    super
-  end
 
   def sparkle_instance
     SparkleFormation.new('dummy')
@@ -85,7 +81,7 @@ class SparkleBuilderController < ApplicationController
         save_template(template_name, template)
         save_build(template_name, build_data)
         flash[:success] = "Created new template #{template_name}!"
-        @redirect_url = sparkle_builder_index_url
+        @redirect_url = sparkle_builders_path
       end
     end
   end
@@ -112,7 +108,7 @@ class SparkleBuilderController < ApplicationController
         save_template(template_name, template)
         save_build(template_name, build_data)
         flash[:success] = "Edited template [#{template_name}]!"
-        @redirect_url = sparkle_builder_index_url
+        @redirect_url = sparkle_builders_path
       end
     end
   end
@@ -123,7 +119,7 @@ class SparkleBuilderController < ApplicationController
         delete_template(params[:id])
         delete_build(params[:id])
         flash[:warn] = "Template [#{params[:id]}] has been deleted!"
-        redirect_to sparkle_builder_index_url
+        redirect_to sparkle_builders_path
       end
     end
   end
@@ -198,13 +194,13 @@ class SparkleBuilderController < ApplicationController
 
   def load_target_urls
     @target_urls = {
-      'sprkl-property-populator' => property_populator_sparkle_builder_index_url,
-      'sprkl-do-validate' => validator_sparkle_builder_index_url,
-      'sprkl-do-create' => sparkle_builder_index_url,
-      'sprkl-build-json' => build_json_sparkle_builder_index_url
+      'sprkl-property-populator' => property_populator_sparkle_builders_path,
+      'sprkl-do-validate' => validator_sparkle_builders_path,
+      'sprkl-do-create' => sparkle_builders_path,
+      'sprkl-build-json' => build_json_sparkle_builders_path
     }
     if(params[:id])
-      @target_urls['sprkl-do-update'] = sparkle_builder_url(params[:id])
+      @target_urls['sprkl-do-update'] = sparkle_builder_path(params[:id])
     end
   end
 

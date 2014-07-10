@@ -89,8 +89,3 @@
         %div.modal-footer
   - (defined?(target_urls) ? target_urls : @target_urls).each do |key, value|
     %hidden{:id => key, 'data-url' => value}
-
-= javascript_include_tag 'jquery.serialize-object.min.js'
-= javascript_include_tag 'jquery.multi-select.js'
-= javascript_include_tag 'sparkle_builder'
-= stylesheet_link_tag 'multi-select.css'
