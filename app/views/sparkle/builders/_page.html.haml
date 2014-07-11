@@ -27,7 +27,7 @@
             %form.form-inline#sprkl-parameter-form{:role => 'form'}
               %div.form-group
                 %input.form-control#sprkl-parameter{:name => 'sprkl_parameter', :type => 'text'}
-              %button.btn.btn-primary.sprkl{:type => 'button', :sprkl => 'add_parameter'}
+              %button.btn.btn-primary.sprkl{:type => 'button', :sprkl => 'sparkle_builder.build.parameters.add'}
                 Add
           %div.col-md-1
           %div.col-md-6#sprkl-parameter-block
@@ -58,11 +58,11 @@
           %pre#sprkl-json
 
   %div.action-buttons.pull-right
-    %button.btn.btn-info.sprkl{:href => '#', :sprkl => 'validate_template', :type => 'button'}= Rails.application.config.sparkle.fetch(:validate_btn_text, 'Validate')
+    %button.btn.btn-info.sprkl{:href => '#', :sprkl => 'sparkle_builder.build.validation.validate_template', :type => 'button'}= Rails.application.config.sparkle.fetch(:validate_btn_text, 'Validate')
     - if @template_name
-      %button.btn.btn-success.sprkl{type: 'submit', sprkl: 'update_template'}= 'Update'
+      %button.btn.btn-success.sprkl{type: 'submit', sprkl: 'sparkle_builder.build.update_template'}= 'Update'
     - else
-      %button.btn.btn-success.sprkl{:href => '#', :sprkl => 'save_template_prompt', :type => 'button'}= Rails.application.config.sparkle.fetch(:create_btn_text, 'Create')
+      %button.btn.btn-success.sprkl{:href => '#', :sprkl => 'sparkle_builder.build.create.open_display', :type => 'button'}= Rails.application.config.sparkle.fetch(:create_btn_text, 'Create')
 
   %div.modal.fade#save-modal
     %div.modal-dialog.modal-sm
@@ -75,7 +75,7 @@
             %div.form-group
               %label{for: 'template_name'}= 'Template name'
               %input#template-name{type: 'text', name: 'template_name', class: 'form-control', placeholder: 'None'}
-                %button#create-button.btn.btn-success.sprkl.pull-right{type: 'submit', sprkl: 'save_template'}= 'Create'
+                %button#create-button.btn.btn-success.sprkl.pull-right{type: 'submit', sprkl: 'sparkle_builder.build.create.save'}= 'Create'
           %div.clearfix
 
   %div.modal.fade#validator-modal

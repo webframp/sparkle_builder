@@ -14,11 +14,11 @@
             %label{:for => property}= property.underscore.humanize
             %input.form-control{:id => property, :type => 'text', :name => property, :value => existing_values[property]}
         %input{:type => 'hidden', :name => 'resource_type', :value => defined?(resource) ? resource : @resource}
-        %button.btn.btn-success.sprkl{:type => 'button', :sprkl => 'add_resource'}
+        %button.btn.btn-success.sprkl{:type => 'button', :sprkl => 'sparkle_builder.build.resources.add'}
           Save
-        %button.btn.btn-warning.sprkl{:type => 'button', :sprkl => 'cancel_resource'}
+        %button.btn.btn-warning.sprkl{:type => 'button', :sprkl => 'sparkle_builder.build.resources.cancel'}
           Cancel
-        %button.btn.btn-danger.sprkl{:type => 'button', :sprkl => 'delete_resource'}
+        %button.btn.btn-danger.sprkl{:type => 'button', :sprkl => 'sparkle_builder.build.resources.remove'}
           Remove
 
 - if(resource_properties = defined?(properties) ? properties : @properties)

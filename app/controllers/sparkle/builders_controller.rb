@@ -31,6 +31,8 @@ class Sparkle::BuildersController < ApplicationController
     respond_to do |format|
       format.js do
         begin
+          puts "***"
+          puts compile_formation.to_json
           stack = sparkle_api.stacks.new(:template => compile_formation.to_json)
           stack.validate
         rescue => e

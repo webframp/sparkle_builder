@@ -47,7 +47,7 @@ sparkle_builder.build.parameters.remove = function(name){
   sparkle_builder.build.resources.disable();
   sparkle_builder.build.parameters.delete(name);
   sparkle_builder.build.parameters.display();
-  sparkle_builder.build.resource.enable();
+  sparkle_builder.build.resources.enable();
 }
 
 /**
@@ -63,7 +63,7 @@ sparkle_builder.build.parameters.display = function(){
     $.each(params, function(idx, value){
       content += '<tr><td>';
       content += value;
-      content += '<a href="#" onclick="delete_parameter(';
+      content += '<a href="#" onclick="sparkle_builder.build.parameters.remove(';
       content += "'" + value + "'";
       content += '); return false;" style="color: black;" class="pull-right glyphicon glyphicon-remove-circle">';
       content += '</a></td></tr>';
@@ -322,7 +322,6 @@ sparkle_builder.build.validation.validate_template = function(){
  * Open template save modal
  **/
 sparkle_builder.build.create.open_display = function(){
-  sparkle_builder.build.resources.disable();
   $('#save-modal').modal('show');
 }
 
@@ -341,7 +340,7 @@ sparkle_builder.build.create.save = function(){
 sparkle_builder.build.update_template = function(){
   params = sparkle_builder.build.build_params();
   $.ajax({
-    url: sparkle_builder.url_for('sprkl-do-update'),
+    url: sparkle_builder.build.url_for('sprkl-do-update'),
     type: 'PUT',
     contentType: 'application/json',
     data: JSON.stringify(params)
@@ -439,7 +438,7 @@ sparkle_builder.build.parameters.get = function(parameter_name){
  * @param parameter_name [String]
  * @param data [Hash]
  **/
-sparkle_builder.build.parameters.set = function(paramter_name, data){
+sparkle_builder.build.parameters.set = function(parameter_name, data){
   $('body').data('sparkles')['parameters'][parameter_name] = data;
 }
 
@@ -449,7 +448,7 @@ sparkle_builder.build.parameters.set = function(paramter_name, data){
  * @param parameter_name [String]
  * @return [true,false]
  **/
-sparkle_builder.build.parameters.delete(parameter_name){
+sparkle_builder.build.parameters.delete = function(parameter_name){
   if(sparkle_builder.build.parameters.exists(parameter_name)){
     delete $('body').data('sparkles')['parameters'][parameter_name]
     return true;
@@ -481,7 +480,7 @@ sparkle_builder.build.reset_sparkle_box = function(){
  * Load the template JSON into the display UI
  **/
 sparkle_builder.build.load_template_json = function(){
-  $.post(sparkle_builder.url_for('sprkl-build-json'), sparkle_builder.build.build_params());
+  $.post(sparkle_builder.build.url_for('sprkl-build-json'), sparkle_builder.build.build_params());
 }
 
 // initialize the builder!
@@ -500,7 +499,24 @@ $(document).ready(
     $('#validator-modal').modal({show: false});
     // hook our custom buttons
     $('body').on('click', 'button.sprkl', function(event){
-      window[$(this).attr('sprkl')]();
+      to_call = $(this).attr('sprkl');
+      if(typeof(to_call) == 'string'){
+        callable = to_call.split('.').reduce(
+          function(memo, key){
+            if(typeof(memo) == 'object'){
+              return memo[key];
+            } else {
+              return null;
+            }
+          },
+          window
+        )
+        if(typeof(callable) == 'function'){
+          return callable();
+        }
+      }
+      window_rails.alert.open({content: 'Invalid callback encountered!'});
+      throw new Error('Invalid callback provided: ' + to_call);
     });
     // hook the forms for intercept
     $('#builder-interface form').submit(function(event){
