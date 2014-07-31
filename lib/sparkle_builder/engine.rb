@@ -15,7 +15,7 @@ module SparkleBuilder
         fog = Rails.application.config.sparkle[:storage_connection] = fog = Fog::Storage.new(credentials)
         storage_bucket = fog.directories.get(bucket)
         unless(storage_bucket)
-          storage_bucket = fog.directories.create(bucket)
+          storage_bucket = fog.directories.create(:key => bucket)
         end
         Rails.application.config.sparkle[:storage_bucket] = storage_bucket
         unless(Rails.application.config.sparkle[:storage_bucket])
