@@ -64,7 +64,7 @@ module SparkleBuilder
       return_container ? result : result.body
     end
 
-    # Retrieve template from storage
+    # Retrieve build from storage
     #
     # @param name [String] name of template
     # @param return_container [TrueClass, FalseClass] return container
