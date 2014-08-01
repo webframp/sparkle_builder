@@ -5,7 +5,7 @@
     $.each(#{format_type_to_js(@build.fetch('build', {}))}, function(key, elm){
       if(elm['resource_name']){
         resource_name = elm['resource_name']
-        update_resource_display(
+        sparkle_builder.build.resources.update_display(
           elm['resource_type'],
           resource_name,
           resource_name + ' [' + elm['resource_type'].replace('AWS::', '') + ']'
@@ -18,7 +18,6 @@
       }
     });
     $('body').data('sparkles', #{format_type_to_js(@build)});
-    display_parameters();
-
-    build_template_json();
+    sparkle_builder.build.parameters.display();
+    sparkle_builder.build.load_template_json();
   });
