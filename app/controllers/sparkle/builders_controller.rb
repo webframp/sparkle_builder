@@ -31,8 +31,6 @@ class Sparkle::BuildersController < ApplicationController
     respond_to do |format|
       format.js do
         begin
-          puts "***"
-          puts compile_formation.to_json
           stack = sparkle_api.stacks.new(:template => compile_formation.to_json)
           stack.validate
         rescue => e
@@ -80,8 +78,18 @@ class Sparkle::BuildersController < ApplicationController
         build_data = JSON.dump(:parameters => params[:parameters], :build => params[:build])
         template = JSON.pretty_generate(JSON.load(compile_formation.to_json))
         template_name = params[:template_name].gsub(/[^a-zA-Z0-9\.-_]/, '_').downcase.sub(/_+$/, '')
+        process_hooks(:before,
+          :build => build_data,
+          :template => template,
+          :template_name => template_name
+        )
         save_template(template_name, template)
         save_build(template_name, build_data)
+        process_hooks(:after,
+          :build => build_data,
+          :template => template,
+          :template_name => template_name
+        )
         flash[:success] = "Created new template #{template_name}!"
         @redirect_url = sparkle_builders_path
       end
@@ -107,8 +115,18 @@ class Sparkle::BuildersController < ApplicationController
         build_data = JSON.dump(:parameters => params[:parameters], :build => params[:build])
         template = JSON.pretty_generate(JSON.load(compile_formation.to_json))
         template_name = params[:template_name].gsub(/[^a-zA-Z0-9\.-_]/, '_').downcase.sub(/_+$/, '')
+        process_hooks(:before,
+          :build => build_data,
+          :template => template,
+          :template_name => template_name
+        )
         save_template(template_name, template)
         save_build(template_name, build_data)
+        process_hooks(:after,
+          :build => build_data,
+          :template => template,
+          :template_name => template_name
+        )
         flash[:success] = "Edited template [#{template_name}]!"
         @redirect_url = sparkle_builders_path
       end
@@ -118,24 +136,39 @@ class Sparkle::BuildersController < ApplicationController
   def destroy
     respond_to do |format|
       format.html do
+        build = fetch_build(params[:id])
+        build['parameters'] = {} unless build['parameters'].is_a?(Hash)
+        build['build'] = {} unless build['build'].is_a?(Hash)
+        template_name = params[:id]
+        template = fetch_template(params[:id])
+        process_hooks(:before,
+          :build => build,
+          :template => template,
+          :template_name => template_name
+        )
         delete_template(params[:id])
         delete_build(params[:id])
+        process_hooks(:after,
+          :build => build,
+          :template => template,
+          :template_name => template_name
+        )
         flash[:warn] = "Template [#{params[:id]}] has been deleted!"
         redirect_to sparkle_builders_path
       end
     end
   end
 
-  def create_hook
-    # provides @stack_name and @json_file
-  end
-
-  def update_hook
-    # provides @stack_name and @json_file
-  end
-
-  def destroy_hook
-    # provides @stack_name (prior to resource destruction)
+  # Run any registered builder hooks
+  #
+  # @param timing [Symbol] :before or :after
+  # @param args [Hash] arguments passed to registered blocks
+  # @option args
+  # @note these are set in Rails.application.config.sparkle[:builder][:hooks][action][timing]
+  def process_hooks(timing, args={})
+    Rails.application.config.sparkle[:builder][:hooks][action_name][timing].each do |callback|
+      callback.call(args)
+    end
   end
 
   private
@@ -253,13 +286,14 @@ class Sparkle::BuildersController < ApplicationController
         all_resources.find_all do |k,v|
           v['resource_type'] != 'component'
         end.map do |k,v|
+          next if v.blank?
           v['resource_type'] = File.basename(v['resource_type']).sub('.rb', '')
           if(v['resource_type'].include?('::'))
             v['resource_type'] = v['resource_type'].gsub('::', '_').underscore
           end
           v['resource_type'] = v['resource_type'].to_sym
           [k, v]
-        end
+        end.compact
       ]
       sfn = SparkleFormation.new('generated')
       unless(components.empty?)
@@ -278,7 +312,7 @@ class Sparkle::BuildersController < ApplicationController
           dynamic!(
             _dyn_properties.delete('resource_type'),
             _dyn_properties.delete('resource_name'),
-            _dyn_properties
+            _dyn_properties.with_indifferent_access
           )
         end
       end
