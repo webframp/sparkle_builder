@@ -62,7 +62,7 @@
     - if @template_name
       %button.btn.btn-success.sprkl{type: 'submit', sprkl: 'sparkle_builder.build.update_template'}= 'Update'
     - else
-      %button.btn.btn-success.sprkl{:href => '#', :sprkl => 'sparkle_builder.build.create.open_display', :type => 'button'}= Rails.application.config.sparkle.fetch(:create_btn_text, 'Create')
+      %button.btn.btn-success.sprkl{:href => '#', :sprkl => 'sparkle_builder.build.create.open_display', :type => 'button'}= Rails.application.config.sparkle.fetch(:create_btn_text, 'Save')
 
   %div.modal.fade#save-modal
     %div.modal-dialog.modal-sm
