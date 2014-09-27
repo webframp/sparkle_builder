@@ -4,12 +4,14 @@
   $(document).ready(function(){
     $.each(#{format_type_to_js(@build.fetch('build', {}))}, function(key, elm){
       if(elm['resource_name']){
-        resource_name = elm['resource_name']
+        setTimeout(function(){
+        resource_name = elm['resource_name'];
         sparkle_builder.build.resources.update_display(
           elm['resource_type'],
           resource_name,
           resource_name + ' [' + elm['resource_type'].replace('AWS::', '') + ']'
         );
+        }, 200);
       } else {
         console.log(key);
         $('#sprkl-resources').multiSelect({afterSelect: function(){}});
