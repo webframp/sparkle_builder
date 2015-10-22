@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.homepage = 'https://github.com/heavywater/sparkle_builder'
   s.description = 'Build sparkle based templates'
   s.require_path = 'lib'
-  s.files = Dir['**/*']
+  s.files = Dir['{lib,app,config}/**/**/*'] + %w(sparkle_builder.gemspec README.md CHANGELOG.md)
 
   s.add_dependency 'rails', '~> 4.0.0'
   s.add_dependency 'sparkle_formation'
