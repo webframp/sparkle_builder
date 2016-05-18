@@ -31,31 +31,35 @@ module SparkleBuilder
     #
     # @param name [String] name of build
     # @param build [Hash]
-    # @return [Fog::File]
+    # @return [Miasma::Models::Storage::File]
     def save_build(name, build)
-      bucket.files.create(
-        :identity => generate_build_path(name),
+      file = bucket.files.build(
+        :name => generate_build_path(name),
         :body => build
       )
+      file.save
+      file
     end
 
     # Persist template to storage
     #
     # @param name [String] name of template
     # @param template [String] JSON template
-    # @return [Fog::File]
+    # @return [Miasma::Models::Storage::File]
     def save_template(name, template)
-      bucket.files.create(
-        :identity => generate_template_path(name),
+      file = bucket.files.build(
+        :name => generate_template_path(name),
         :body => template
       )
+      file.save
+      file
     end
 
     # Retrieve template from storage
     #
     # @param name [String] name of template
     # @param return_container [TrueClass, FalseClass] return remote reponse instead of string
-    # @return [Fog::File, String]
+    # @return [Miasma::Models::Storage::File, String]
     def fetch_template(name, return_container=false)
       result = bucket.files.get(generate_template_path(name))
       return_container ? result : result.body
@@ -65,7 +69,7 @@ module SparkleBuilder
     #
     # @param name [String] name of template
     # @param return_container [TrueClass, FalseClass] return container
-    # @return [Fog::File, String]
+    # @return [Miasma::Models::Stroage::File, String]
     def fetch_build(name, return_container=false)
       build = bucket.files.get(generate_build_path(name))
       return_container ? build : JSON.load(build.body)
@@ -111,7 +115,7 @@ module SparkleBuilder
       File.join('builds', get_prefix, "#{name}.json")
     end
 
-    # @return [Fog::Orchestration]
+    # @return [Miasma::Models::Orchestration]
     def sparkle_api
       unless(Rails.application.config.sparkle[:orchestration_connection])
         raise 'No credentials provided for orchestration API connection!'
@@ -119,7 +123,7 @@ module SparkleBuilder
       Rails.application.config.sparkle[:orchestration_connection]
     end
 
-    # @return [Fog::Files]
+    # @return [Miasma::Models::Orchestration]
     def bucket
       unless(Rails.application.config.sparkle[:storage_bucket])
         raise 'No storage bucket available'
