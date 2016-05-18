@@ -4,22 +4,19 @@ module SparkleBuilder
     config.to_prepare do
       require 'sparkle_formation'
       SparkleUi::Setup.init!
-      credentials = Rails.application.config.sparkle.
-        try(:[], :storage).
-        try(:[], :credentials)
-      bucket = Rails.application.config.sparkle.
-        try(:[], :storage).
-        try(:[], :bucket)
-      if(credentials && bucket)
-        require 'fog'
-        fog = Rails.application.config.sparkle[:storage_connection] = fog = Fog::Storage.new(credentials)
-        storage_bucket = fog.directories.get(bucket)
+      storage_api = Rails.application.config.sparkle.to_smash.get(:storage, :api)
+      bucket = Rails.application.config.sparkle.to_smash.get(:storage, :bucket)
+      if(storage_api && bucket)
+        require 'miasma'
+        s3 = Rails.application.config.sparkle[:storage_connection] = Miasma.api(
+          storage_api.merge(
+            :type => :storage
+          )
+        )
+        storage_bucket = s3.buckets.get(bucket)
         unless(storage_bucket)
-          storage_bucket = fog.directories.create(:key => bucket)
-        end
-        Rails.application.config.sparkle[:storage_bucket] = storage_bucket
-        unless(Rails.application.config.sparkle[:storage_bucket])
-          Rails.application.config.sparkle[:storage_bucket] = fog.directories.create(:identity => bucket)
+          storage_bucket = s3.buckets.build(:name => bucket)
+          storage_bucket.save
         end
       else
         Rails.logger.warn 'Builder cannot persist data. The `:bucket` and `:credentials` must be configured!'

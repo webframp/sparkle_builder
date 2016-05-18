@@ -141,13 +141,15 @@ sparkle_builder.build.resources.add = function(resource){
     key = resource + '_' + (idx + 1);
     key = key.replace(/::/g, '');
   }
-  if(data['resource_type'].substr(0, 8) == 'dynamics'){
+  if(data['resource_type'] && data['resource_type'].substr(0, 8) == 'dynamics'){
     key = key + data['resource_type'].split('/')[1].replace('.rb', '');
   }
   sparkle_builder.build.resources.enable(true);
-  sparkle_builder.build.resources.update_display(
-    resource, key, key + " [" + resource.replace('AWS::', '') + "]"
-  );
+  if(resource) {
+    sparkle_builder.build.resources.update_display(
+      resource, key, key + " [" + resource.replace('AWS::', '') + "]"
+    );
+  }
   sparkle_builder.build.reset_sparkle_box();
   sparkle_builder.build.resources.set(key, data);
   sparkle_builder.build.load_template_json();

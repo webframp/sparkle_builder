@@ -252,10 +252,8 @@ class Sparkle::BuildersController < ApplicationController
   def load_aws_resources
     enabled = Rails.application.config.sparkle.fetch(:enabled_resources, [:aws])
     if(enabled.include?(:aws))
-      if(!defined?(SfnAws) || SfnAws.registry.empty?)
-        require 'sparkle_formation/aws'
-        SfnAws.load!
-      end
+      require 'sparkle_formation/aws'
+      SfnAws.load!
     end
   end
 
