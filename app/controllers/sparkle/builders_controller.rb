@@ -9,7 +9,11 @@ class Sparkle::BuildersController < ApplicationController
   before_filter :load_aws_resources
 
   def sparkle_instance
-    SparkleFormation.new('dummy')
+    require 'sparkle-pack-jackal-cfn'
+    @pack = SparkleFormation::Sparkle.new(:name => 'sparkle-pack-jackal-cfn')
+    @collection = SparkleFormation::SparkleCollection.new(:provider => :aws)
+    @collection.set_root(@pack)
+    SparkleFormation.new('dummy', :sparkle_collection => @collection)
   end
 
   def property_populator
@@ -181,49 +185,23 @@ class Sparkle::BuildersController < ApplicationController
           [key.sub('AWS::', ''), key]
         end
       end
-      if(SparkleFormation.sparkle_path)
-        [:components, :dynamics].each do |key|
-          if(enabled.include?(key))
-            items = Dir.glob(
-              File.join(SparkleFormation.custom_paths["#{key}_directory".to_sym], '*.rb')
-            ).sort.reverse.map do |file|
-              [File.basename(file).sub('.rb', '').humanize, File.join(key.to_s, File.basename(file))]
-            end
-            hash[key.to_s.capitalize] = items unless items.empty?
-          end
-        end
+      hash['Dynamics'] = []
+      hash['Components'] = []
+      @collection.dynamics.fetch(:aws, {}).keys.each do |key|
+        hash['Dynamics'] << [key.humanize, key]
+      end
+      @collection.components.fetch(:aws, {}).keys.each do |key|
+        hash['Components'] << [key.humanize, key]
       end
     end
   end
 
-  SEED_IGNORE_DIRECTORIES = ['dynamics', 'components']
-
   def fetch_seeds
-    if(SparkleFormation.sparkle_path)
-      {}.tap do |hash|
-        Dir.glob(File.join(SparkleFormation.sparkle_path, '*')).sort.each do |entry|
-          next if SEED_IGNORE_DIRECTORIES.include?(File.basename(entry))
-          path = entry.sub(SparkleFormation.sparkle_path, '').sub(/^\//, '')
-          if(File.file?(entry) && entry.end_with?('.rb'))
-            hash['Base'] ||= []
-            hash['Base'] << [path.sub('.rb', '').humanize, path]
-          elsif(File.directory?(entry))
-            key = File.basename(path).tr('-_', ' ').humanize
-            hash[key] ||= []
-            Dir.glob(File.join(entry, '**', '*.rb')).sort.each do |entry|
-              path = entry.sub(SparkleFormation.sparkle_path, '').sub(/^\//, '')
-              readable_entry = path.sub('.rb', '').split('/')
-              readable_entry.shift
-              readable_entry = readable_entry.map{|i|i.tr('-_', ' ').humanize}.join(' / ')
-              hash[key] << [readable_entry, path]
-            end
-          else
-            Rails.logger.error "Unknown type discovered. Unable to process. Path: #{entry}"
-          end
-        end
+    {}.tap do |hash|
+      hash['Base'] = []
+      @collection.templates.fetch(:aws, {}).keys.sort.each do |entry|
+        hash['Base'] << [entry.humanize, entry]
       end
-    else
-      {}
     end
   end
 
@@ -293,7 +271,7 @@ class Sparkle::BuildersController < ApplicationController
           [k, v]
         end.compact
       ]
-      sfn = SparkleFormation.new('generated')
+      sfn = SparkleFormation.new('generated', :sparkle_collection => @collection)
       unless(components.empty?)
         sfn.load(*components)
       end

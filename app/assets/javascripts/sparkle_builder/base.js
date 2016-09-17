@@ -228,7 +228,7 @@ sparkle_builder.build.resources.update = function(resource){
   sparkle_ui.display.highlight('resource-body', 'success');
   sparkle_builder.build.resources.enable();
   sparkle_builder.build.reset_sparkle_box();
-  true
+  return true;
 }
 
 /**
