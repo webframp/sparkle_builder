@@ -7,8 +7,9 @@ Gem::Specification.new do |s|
   s.version = SparkleBuilder::VERSION.version
   s.summary = 'Sparkle Builder'
   s.author = 'Chris Roberts'
-  s.email = 'chris@hw-ops.com'
-  s.homepage = 'https://github.com/heavywater/sparkle_builder'
+  s.email = 'code@chrisroberts.org'
+  s.license = 'Apache 2.0'
+  s.homepage = 'https://github.com/sparkleformation/sparkle_builder'
   s.description = 'Build sparkle based templates'
   s.require_path = 'lib'
   s.files = Dir['{lib,app,config}/**/**/*'] + %w(sparkle_builder.gemspec)
